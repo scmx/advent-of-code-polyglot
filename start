@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+# Usage: ./start <year> <day>
+# Example ./start 2023 1
+
+set -euo pipefail
+
+# Args
+year="$1"
+shift
+day_num="$1"
+day_padded="$(printf "%02d" "$day_num")"
+day_pretty="day_${day_padded}"
+shift
+part_num="${1:-1}"
+part_padded="$(printf "%02d" "$part_num")"
+part_pretty="part_${part_padded}"
+shift || true
+
+# Day folder
+day="$year/$day_pretty"
+cache="$day/.cache"
+mkdir -p "$cache"
+
+# Config
+part_1="$day/part_1"
+part_1_solve="$part_1/solve"
+part_1_test="$part_1/test"
+part_2="$day/part_2"
+part_2_solve="$part_2/solve"
+part_2_test="$part_2/test"
+solve_file=$part_1_solve
+test_file=$part_1_test
+if [ "$part_num" = "2" ]; then
+  solve_file=$part_2_solve
+  test_file=$part_2_test
+fi
+
+download_html() {
+  html_file="$cache/index.html"
+  markdown_file_raw="$cache/index.md"
+  markdown_file_clean="$day/README.md"
+  if [ ! -f "$html_file" ]; then
+    curl -s "https://adventofcode.com/$year/day/$day_num" \
+      -H "Cookie: session=$AOC_SESSION" \
+      -o "$html_file"
+  fi
+}
+
+download_input() {
+  input_file="$day/input"
+  if [ ! -f "$input_file" ]; then
+    curl -s "https://adventofcode.com/$year/day/$day_num/input" \
+      -H "Cookie: session=$AOC_SESSION" \
+      -o "$input_file"
+  fi
+}
+
+generate_markdown() {
+  npx to-markdown-cli -i "$html_file" -o "$markdown_file_raw"
+}
+
+clean_markdown() {
+  sed -n '/^##/,$p' "$markdown_file_raw" \
+    | sed -n '/^At this point/q;p' \
+    | sed -n '/^To begin, /q;p' \
+    | sed -n "/^Although it hasn't changed, /q;p" \
+    > "$markdown_file_clean"
+}
+
+template_part_1() {
+  mkdir -p "$part_1"
+  if [ "$part_num" = "1" ] && [ ! -f "$part_1_solve" ]; then
+    cat <<FILE > "$part_1_solve"
+#!/usr/bin/env ruby
+
+ARGF.read.split("\n")
+    .map { |line| line }
+    .then(&method(:puts))
+FILE
+
+    cat <<FILE > "$part_1_test"
+#!/usr/bin/env ruby
+
+class Test < Minitest::Test
+  def test_example
+    assert_equal 'answer1', solve(<<~INPUT)
+      example1
+    INPUT
+  end
+
+  def test_input
+    skip
+    assert_equal 'answer2', solve(input)
+  end
+end
+FILE
+  chmod u+x "$part_1_solve"
+  fi
+}
+
+template_part_2() {
+  if [ "$part_num" = "2" ] && [ ! -f "$part_2_solve" ]; then
+    mkdir -p "$part_2"
+    cp "$part_1_solve" "$part_2_solve"
+    cp "$part_1_test" "$part_2_test"
+    chmod u+x "$part_2_solve"
+  fi
+}
+
+start_day_part() {
+  seconds=$(ruby -e "puts Time.new(${year}, 12, ${day_num}, 6) - Time.now")
+  echo -n "Sleeping for $seconds seconds... "
+  while true; do
+    seconds=$(ruby -e "puts Time.new(${year}, 12, ${day_num}, 6) - Time.now")
+    if (( $(echo "$seconds < 0" | bc -l) )); then
+      echo "Ready!"
+      break
+    fi
+    sleep 10
+  done
+
+  download_html
+  download_input
+  generate_markdown
+  clean_markdown
+  template_part_1
+  template_part_2
+
+  tmux new-window -n "$year $day_pretty $part_pretty" \
+    "NVIM_LISTEN_ADDRESS='/tmp/nvimsocket-$PWD' nvim -O '$solve_file' '$test_file' '$markdown_file_clean'" \
+    \; split-window -hb "./start $year $day_num $part_num test_runner" \
+    \; resize-pane -x 50
+}
+
+test_runner() {
+  while true; do
+    clear
+    echo "$year $day_pretty"
+    set +e
+    shebang=$(head -1 "$test_file")
+    if [[ "$shebang" = "#!/usr/bin/env ruby" ]]; then
+      AOC_YEAR=$year AOC_DAY=$day_num AOC_PART=$part_num \
+      ruby -r ./test_helper -r minitest/autorun "$test_file"
+    else
+      AOC_YEAR=$year AOC_DAY=$day_num AOC_PART=$part_num \
+      bash "$test_file"
+    fi
+
+    find "$day" -type f | entr -z -d -p echo Change detected...
+    sleep 1
+  done
+}
+
+case "${1:-}" in
+  "test_runner")
+    test_runner
+    ;;
+  *)
+    start_day_part
+    ;;
+esac
