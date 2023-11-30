@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+sections = ARGF.read.split("\n").map do |line|
+  line.split(',').flat_map do |range|
+    range.split('-').map(&:to_i)
+  end
+end
+
+puts(sections.count do |(a1, a2, b1, b2)|
+  (a1 >= b1 && a2 <= b2) || (b1 >= a1 && b2 <= a2)
+end)
