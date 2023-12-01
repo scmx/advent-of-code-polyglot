@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+MATCHERS = {
+  /^(0|zero)/ => 0,
+  /^(1|one)/ => 1,
+  /^(2|two)/ => 2,
+  /^(3|three)/ => 3,
+  /^(4|four)/ => 4,
+  /^(5|five)/ => 5,
+  /^(6|six)/ => 6,
+  /^(7|seven)/ => 7,
+  /^(8|eight)/ => 8,
+  /^(9|nine)/ => 9
+}.freeze
+
+def match(text)
+  MATCHERS.find { |matcher, _value| text.match?(matcher) }&.last
+end
+
+def calibrate(line)
+  0.upto(line.size - 1)
+   .map { |index| match(line[index..]) }
+   .compact
+end
+
+ARGF.read.split("\n")
+    .map { |line| calibrate(line) }
+    .map { |digits| "#{digits[0]}#{digits[-1]}".to_i }
+    .sum
+    .then(&method(:puts))

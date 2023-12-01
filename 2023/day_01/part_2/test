@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+class Test < Minitest::Test
+  def test_example
+    assert_equal '281', solve(<<~INPUT)
+      two1nine
+      eightwothree
+      abcone2threexyz
+      xtwone3four
+      4nineeightseven2
+      zoneight234
+      7pqrstsixteen
+    INPUT
+  end
+
+  def test_input
+    assert_equal '53268', solve(input)
+  end
+end
