@@ -1,20 +1,11 @@
 #!/usr/bin/env ruby
 
-MATCHERS = {
-  /^(0|zero)/ => 0,
-  /^(1|one)/ => 1,
-  /^(2|two)/ => 2,
-  /^(3|three)/ => 3,
-  /^(4|four)/ => 4,
-  /^(5|five)/ => 5,
-  /^(6|six)/ => 6,
-  /^(7|seven)/ => 7,
-  /^(8|eight)/ => 8,
-  /^(9|nine)/ => 9
-}.freeze
+DIGIT_NAMES = %w[zero one two three four five six seven eight nine].freeze
 
 def match(text)
-  MATCHERS.find { |matcher, _value| text.match?(matcher) }&.last
+  DIGIT_NAMES.index.with_index do |name, index|
+    text.start_with?(name) || text.start_with?(index.to_s)
+  end
 end
 
 def calibrate(line)
