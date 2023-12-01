@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+calibration_values = ARGF.read.split("\n").map do |line|
+  digits = line.gsub(/\D/, '')
+  "#{digits[0]}#{digits[-1]}".to_i
+end
+
+puts calibration_values.sum
