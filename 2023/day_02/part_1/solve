@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+
+class GameSet
+  attr_accessor :red, :green, :blue
+
+  def initialize(red: 0, green: 0, blue: 0)
+    self.red = red
+    self.green = green
+    self.blue = blue
+  end
+end
+
+def parse_cube(cube)
+  count, color = cube.split
+  [color.to_sym, count.to_i]
+end
+
+def parse_set(slice)
+  GameSet.new(**slice.split(', ').map { |item| parse_cube(item.strip) }.sort.to_h)
+end
+
+def parse_game(line)
+  game_id, info = line[5..].split(':')
+  sets = info.split('; ').map { |set| parse_set(set) }
+  [game_id.to_i, sets]
+end
+
+def possible?(_game_id, sets)
+  sets.all? do |set|
+    set.red <= 12 && set.green <= 13 && set.blue <= 14
+  end
+end
+
+ARGF.read.split("\n")
+    .to_h { |line| parse_game(line) }
+    .filter(&method(:possible?))
+    .keys
+    .sum
+    .then(&method(:puts))
