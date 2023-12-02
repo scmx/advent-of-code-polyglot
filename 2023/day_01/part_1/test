@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-class Test < Minitest::Test
+class Test2023Day01Part1 < Minitest::Test
   def test_example
     assert_equal '142', solve(<<~INPUT)
       1abc2

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+ruby -r minitest/autorun -r ./test_helper -e 'Dir.glob("./*/day_*/part_*/test") { |f| load f }'

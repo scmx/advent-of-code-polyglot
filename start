@@ -82,7 +82,7 @@ FILE
     cat <<FILE > "$part_1_test"
 #!/usr/bin/env ruby
 
-class Test < Minitest::Test
+class Test${year}Day${day_padded}Part1 < Minitest::Test
   def test_example
     assert_equal 'answer1', solve(<<~INPUT)
       example1
@@ -104,13 +104,16 @@ template_part_2() {
     mkdir -p "$part_2"
     cp "$part_1_solve" "$part_2_solve"
     cp "$part_1_test" "$part_2_test"
+    sed -i '' 's/Part1/Part2/g' "$part_2_test"
     chmod u+x "$part_2_solve"
   fi
 }
 
 start_day_part() {
   seconds=$(ruby -e "puts Time.new(${year}, 12, ${day_num}, 6) - Time.now")
-  echo -n "Sleeping for $seconds seconds... "
+  if (( $(echo "$seconds > 0" | bc -l) )); then
+    echo -n "Sleeping for $seconds seconds... "
+  fi
   while true; do
     seconds=$(ruby -e "puts Time.new(${year}, 12, ${day_num}, 6) - Time.now")
     if (( $(echo "$seconds < 0" | bc -l) )); then
@@ -140,7 +143,6 @@ test_runner() {
     set +e
     shebang=$(head -1 "$test_file")
     if [[ "$shebang" = "#!/usr/bin/env ruby" ]]; then
-      AOC_YEAR=$year AOC_DAY=$day_num AOC_PART=$part_num \
       ruby -r ./test_helper -r minitest/autorun "$test_file"
     else
       AOC_YEAR=$year AOC_DAY=$day_num AOC_PART=$part_num \
